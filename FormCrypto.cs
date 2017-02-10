@@ -144,9 +144,18 @@ namespace CryptoGame
             using (var streamReader = new StreamReader(httpResponse.GetResponseStream()))
             {
                 var result = streamReader.ReadToEnd();
+                //AddOutputLine($"Result bet brut : {result}");
                 dynamic resJson = System.Web.Helpers.Json.Decode(result); // TODO Faire une classe pour recup le result en json de PlaceBet
-                BetResult b = BetResult.FromJSONDynamic(resJson, coin);
-                AddOutputLine("Result: " + b);
+                try
+                {
+                    BetResult b = BetResult.FromJSONDynamic(resJson, coin);
+                    AddOutputLine($"Result: {b}");
+                }
+                catch (Exception e)
+                {
+                    AddOutputLine($"EXCEPTION : {e.ToString()}");
+                    //throw;
+                }
             }
         }
 
@@ -468,8 +477,8 @@ namespace CryptoGame
         public string Coin { get; set; }
         public int BetID { get; set; } = 0;
         public decimal Roll { get; set; } = 0;
-        public bool UnderOver { get; set; } = true;
-        public string ClientSeed { get; set; } = "";
+        //public bool UnderOver { get; set; } = true;
+        //public string ClientSeed { get; set; } = "";
         public string Target { get; set; } = "";
         public decimal Profit { get; set; } = 0;
         public string ServerSeed { get; set; } = "";
@@ -481,8 +490,8 @@ namespace CryptoGame
             s.Coin = coin;
             s.BetID = json.BetID;
             s.Roll = json.Roll;
-            s.UnderOver = json.UnderOver;
-            s.ClientSeed = json.ClientSeed;
+            //s.UnderOver = json.UnderOver;
+            //s.ClientSeed = json.ClientSeed;
             s.Target = json.Target;
             s.Profit = json.Profit;
             s.ServerSeed = json.ServerSeed;
@@ -495,7 +504,7 @@ namespace CryptoGame
             string output = "Coin: " + this.Coin + "\r\n";
             output += "BetID: " + this.BetID + "\r\n";
             output += "Roll: " + this.Roll + "\r\n";
-            output += "UnderOver: " + this.UnderOver + "\r\n";
+            //output += "UnderOver: " + this.UnderOver + "\r\n";
             output += "Target: " + this.Target + "\r\n";
             output += "Profit: " + this.Profit;
             return output;
