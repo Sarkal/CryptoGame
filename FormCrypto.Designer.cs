@@ -54,11 +54,12 @@
             this.labelAmount = new System.Windows.Forms.Label();
             this.numericUpDownBet = new System.Windows.Forms.NumericUpDown();
             this.labelInfo = new System.Windows.Forms.Label();
-            this.textBox1 = new System.Windows.Forms.TextBox();
+            this.dataGridViewHistoric = new System.Windows.Forms.DataGridView();
             this.groupBox1.SuspendLayout();
             this.groupBox2.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.numericUpDownPayout)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.numericUpDownBet)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.dataGridViewHistoric)).BeginInit();
             this.SuspendLayout();
             // 
             // textBoxAPI
@@ -353,29 +354,26 @@
             this.labelInfo.Font = new System.Drawing.Font("Microsoft Sans Serif", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.labelInfo.Location = new System.Drawing.Point(349, 244);
             this.labelInfo.Name = "labelInfo";
-            this.labelInfo.Size = new System.Drawing.Size(48, 15);
+            this.labelInfo.Size = new System.Drawing.Size(69, 15);
             this.labelInfo.TabIndex = 15;
-            this.labelInfo.Text = "Info Bet";
+            this.labelInfo.Text = "Historic Bet";
             // 
-            // textBox1
+            // dataGridViewHistoric
             // 
-            this.textBox1.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
-            | System.Windows.Forms.AnchorStyles.Left)));
-            this.textBox1.Font = new System.Drawing.Font("Microsoft Sans Serif", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.textBox1.Location = new System.Drawing.Point(349, 262);
-            this.textBox1.Multiline = true;
-            this.textBox1.Name = "textBox1";
-            this.textBox1.ScrollBars = System.Windows.Forms.ScrollBars.Vertical;
-            this.textBox1.Size = new System.Drawing.Size(372, 166);
-            this.textBox1.TabIndex = 14;
+            this.dataGridViewHistoric.AutoSizeColumnsMode = System.Windows.Forms.DataGridViewAutoSizeColumnsMode.Fill;
+            this.dataGridViewHistoric.ColumnHeadersHeightSizeMode = System.Windows.Forms.DataGridViewColumnHeadersHeightSizeMode.AutoSize;
+            this.dataGridViewHistoric.Location = new System.Drawing.Point(353, 263);
+            this.dataGridViewHistoric.Name = "dataGridViewHistoric";
+            this.dataGridViewHistoric.Size = new System.Drawing.Size(371, 171);
+            this.dataGridViewHistoric.TabIndex = 16;
             // 
             // FormCrypto
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(736, 440);
+            this.Controls.Add(this.dataGridViewHistoric);
             this.Controls.Add(this.labelInfo);
-            this.Controls.Add(this.textBox1);
             this.Controls.Add(this.groupBox2);
             this.Controls.Add(this.groupBox1);
             this.Controls.Add(this.labelLOutput);
@@ -393,6 +391,7 @@
             this.groupBox2.PerformLayout();
             ((System.ComponentModel.ISupportInitialize)(this.numericUpDownPayout)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.numericUpDownBet)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.dataGridViewHistoric)).EndInit();
             this.ResumeLayout(false);
             this.PerformLayout();
 
@@ -426,7 +425,7 @@
         private System.Windows.Forms.Label labelBalance;
         private System.Windows.Forms.Label label2;
         private System.Windows.Forms.Label labelInfo;
-        private System.Windows.Forms.TextBox textBox1;
+        private System.Windows.Forms.DataGridView dataGridViewHistoric;
     }
 }
 

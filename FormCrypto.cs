@@ -21,14 +21,25 @@ namespace CryptoGame
 {
     public partial class FormCrypto : Form
     {
-        static HttpClient client = new HttpClient();
         private static string APIKey = "";
+        DataTable _dtHistoricBet;
 
         public FormCrypto()
         {
             InitializeComponent();
             buttonBet.Enabled = false;
+            InitDtHistoric();
+            RefreshGridViewHistoric();
         }
+
+        private void InitDtHistoric()
+        {
+            _dtHistoricBet = new DataTable();
+            _dtHistoricBet.Columns.Add("Coin", typeof(string));
+            _dtHistoricBet.Columns.Add("Profit", typeof(decimal));
+        }
+
+
 
         private void buttonEditAPI_Click(object sender, EventArgs e)
         {
@@ -49,80 +60,60 @@ namespace CryptoGame
             // On créé une WebRequest qui va prendre notre url
             WebRequest req = WebRequest.Create(url);
             // On récupère la réponse
-            WebResponse res = req.GetResponse();
-
-            // using est un bloc qui prend une ressource et s'assure qu'elle soit détruite à la fin 
-            // (peu importe ce qui arrive, elle sera détruite, ça évite les fuites de mémoires)
-            // la ressource est disponible uniquement dans la portée des { } et est détruite à la fin
-            using (var reader = new StreamReader(res.GetResponseStream()))
+            using (WebResponse res = req.GetResponse())
             {
-                // On récupère la réponse entière ici
-                string responseJSON = reader.ReadToEnd();
-
-                // On utilise le Parser pour créer un objet JSON dynamic 
-                // (c'est un truc que je viens de découvrir ! il est résolu uniquement en runtime)
-                dynamic json = System.Web.Helpers.Json.Decode(responseJSON);
-
-                // On créé et on instancie notre liste de PoloniexResult
-                List<PoloniexResult> listPX = new List<PoloniexResult>();
-
-                // On utilise un foreach pour cycler sur tous les résultats du parser
-                // Ici "item" est un KeyValuePair (encore un truc que je viens de découvrir, c'est cool)
-                // il est décomposé en <Key> et <Value>. 
-                // Key c'est une string, c'est le nom de l'item
-                // Value c'est un object, donc ça peut être n'importe quoi
-                foreach (var item in json)
+                // using est un bloc qui prend une ressource et s'assure qu'elle soit détruite à la fin 
+                // (peu importe ce qui arrive, elle sera détruite, ça évite les fuites de mémoires)
+                // la ressource est disponible uniquement dans la portée des { } et est détruite à la fin
+                using (var reader = new StreamReader(res.GetResponseStream()))
                 {
-                    // J'ai écrit une méthode qui convertit direct l'item en PoloniexResult, va la voir, 
-                    // c'est important de comprendre comment utiliser ce KeyValuePair si tu veux utiliser ce Parser !
-                    PoloniexResult pxRes = PoloniexResult.FromJSONDynamic(item);
-                    listPX.Add(pxRes);
+                    // On récupère la réponse entière ici
+                    string responseJSON = reader.ReadToEnd();
+
+                    // On utilise le Parser pour créer un objet JSON dynamic 
+                    // (c'est un truc que je viens de découvrir ! il est résolu uniquement en runtime)
+                    dynamic json = System.Web.Helpers.Json.Decode(responseJSON);
+
+                    // On créé et on instancie notre liste de PoloniexResult
+                    List<PoloniexResult> listPX = new List<PoloniexResult>();
+
+                    // On utilise un foreach pour cycler sur tous les résultats du parser
+                    // Ici "item" est un KeyValuePair (encore un truc que je viens de découvrir, c'est cool)
+                    // il est décomposé en <Key> et <Value>. 
+                    // Key c'est une string, c'est le nom de l'item
+                    // Value c'est un object, donc ça peut être n'importe quoi
+                    foreach (var item in json)
+                    {
+                        // J'ai écrit une méthode qui convertit direct l'item en PoloniexResult, va la voir, 
+                        // c'est important de comprendre comment utiliser ce KeyValuePair si tu veux utiliser ce Parser !
+                        PoloniexResult pxRes = PoloniexResult.FromJSONDynamic(item);
+                        listPX.Add(pxRes);
+                    }
+                    w.Stop();
+                    AddOutputLine("Time of query, parsing and inventoring " + listPX.Count + " objects : " + w.ElapsedMilliseconds + " ms");
                 }
-                w.Stop();
-                AddOutputLine("Time of query, parsing and inventoring " + listPX.Count + " objects : " + w.ElapsedMilliseconds + " ms");
             }
         }
 
-        /// <summary>
-        /// Ajoute une ligne dans la textBoxOutput
-        /// </summary>
-        private void AddOutputLine(string text)
-        {
-            if (textBoxOutput.InvokeRequired)
-                this.Invoke((MethodInvoker)(() => AddOutputLine(text)));
-            else
-                textBoxOutput.AppendText(text + "\r\n");
-        }
 
-        /*
-         var input = { Bet: 0.00001024, Payout: 2.0, UnderOver: true, ClientSeed: "somerandomseed" };
-         {
-          url: "https://api.crypto-games.net/v1/placebet/<Coin>/<Key>",
-          data: JSON.stringify(input),
-          dataType: "json",
-          contentType: "application/json",
-          type: "POST",
-          success: function (r) {
-                console.log(r);
-          }
-         }
-        */
 
+        #region JSON OPERATION
         /// <summary>
         /// Place un pari avec les différents paramètres
         /// </summary>
         /// <param name="bet">Montant du pari</param>
         /// <param name="payout">Retour sur le pari</param>
-        /// <param name="underOver">true : over, false : under</param>
+        /// <param name="underOver">true : over target, false : under target</param>
         /// <param name="clientSeed">Graine pour le random</param>
         /// <param name="coin">Monnaie pour le pari</param>
         /// <param name="key">Clef d'accès API</param>
         /// <source>http://stackoverflow.com/questions/9145667/how-to-post-json-to-the-server</source>
-        private void JsonPlaceBet(decimal bet, decimal payout, bool underOver,
+        /// <returns>BetResult contenant la reponse du serveur ou null si exception</returns>
+        private BetResult JsonPlaceBet(decimal bet, decimal payout, bool underOver,
             string coin, string key, string clientSeed = "somerandomseed")
         {
-            string url = "https://api.crypto-games.net/v1/placebet/";
-            var httpWebRequest = (HttpWebRequest)WebRequest.Create(url + coin + "/" + key);
+            string url = "https://api.crypto-games.net/v1/placebet/" + coin + "/" + key;
+            var httpWebRequest = (HttpWebRequest)WebRequest.Create(url);
             httpWebRequest.ContentType = "application/json";
             httpWebRequest.Method = "POST";
 
@@ -140,22 +131,27 @@ namespace CryptoGame
                 streamWriter.Write(json);
             }
 
-            var httpResponse = (HttpWebResponse)httpWebRequest.GetResponse();
+            using (var httpResponse = (HttpWebResponse)httpWebRequest.GetResponse())
             using (var streamReader = new StreamReader(httpResponse.GetResponseStream()))
             {
                 var result = streamReader.ReadToEnd();
                 //AddOutputLine($"Result bet brut : {result}");
-                dynamic resJson = System.Web.Helpers.Json.Decode(result); // TODO Faire une classe pour recup le result en json de PlaceBet
+                dynamic resJson = System.Web.Helpers.Json.Decode(result);
                 try
                 {
                     BetResult b = BetResult.FromJSONDynamic(resJson, coin);
                     AddOutputLine($"Result: {b}");
+                    AddHistoricRow(b);
+                    RefreshGridViewHistoric();
+                    return b;
                 }
                 catch (Exception e)
                 {
+                    AddOutputLine($"Result brut : {result}");
                     AddOutputLine($"EXCEPTION : {e.ToString()}");
-                    //throw;
+                    return null;
                 }
+
             }
         }
 
@@ -166,8 +162,8 @@ namespace CryptoGame
                 string url = "https://api.crypto-games.net/v1/balance/" + coin + "/" + key;
 
                 WebRequest req = WebRequest.Create(url);
-                WebResponse res = req.GetResponse();
 
+                using (WebResponse res = req.GetResponse())
                 using (var reader = new StreamReader(res.GetResponseStream()))
                 {
                     string responseJSON = reader.ReadToEnd();
@@ -189,8 +185,8 @@ namespace CryptoGame
                 string url = "https://api.crypto-games.net/v1/settings/" + coin;
 
                 WebRequest req = WebRequest.Create(url);
-                WebResponse res = req.GetResponse();
 
+                using (WebResponse res = req.GetResponse())
                 using (var reader = new StreamReader(res.GetResponseStream()))
                 {
                     string responseJSON = reader.ReadToEnd();
@@ -212,8 +208,8 @@ namespace CryptoGame
                 string url = "https://api.crypto-games.net/v1/coinstats/" + coin;
 
                 WebRequest req = WebRequest.Create(url);
-                WebResponse res = req.GetResponse();
 
+                using (WebResponse res = req.GetResponse())
                 using (var reader = new StreamReader(res.GetResponseStream()))
                 {
                     string responseJSON = reader.ReadToEnd();
@@ -227,7 +223,9 @@ namespace CryptoGame
                 AddOutputLine("Select a Coin first");
             return new CoinStats();
         }
+        #endregion
 
+        #region GET UI INPUT
         private string GetSelectedCoin()
         {
             if (listBoxCoin.SelectedIndex != -1)
@@ -252,19 +250,22 @@ namespace CryptoGame
         {
             return textBoxAPI.Text;
         }
+        #endregion
 
+        #region EVENT HANDLERS
         private void buttonBet_Click(object sender, EventArgs e)
         {
             string coin = GetSelectedCoin();
             string key = GetAPIKey();
             if (coin != null && key != "")
             {
-                buttonBet.Enabled = false;
-                decimal betAmount = GetBetAmount();
-                decimal betPayout = GetBetPayout();
-                bool underOver = GetUnderOver();
-                JsonPlaceBet(betAmount, betPayout, underOver, coin, key);
-                buttonBet.Enabled = true;
+                Task.Factory.StartNew(() =>
+                {
+                    decimal betAmount = GetBetAmount();
+                    decimal betPayout = GetBetPayout();
+                    bool underOver = GetUnderOver();
+                    JsonPlaceBet(betAmount, betPayout, underOver, coin, key);
+                });
             }
             else
                 AddOutputLine("Coin or API Key invalid.");
@@ -277,6 +278,7 @@ namespace CryptoGame
             if (coin != null && key != "")
             {
                 CoinBalance bal = JsonGetBalance(coin, key);
+                labelBalance.Text = bal.Balance.ToString();
                 AddOutputLine(bal.ToString());
             }
             else
@@ -327,7 +329,7 @@ namespace CryptoGame
                 numericUpDownPayout.Minimum = b.MinRatio;
                 numericUpDownPayout.Maximum = b.MaxRatio;
                 //if (numericUpDownBet.Value < b.MinBet)
-                    numericUpDownBet.Value = b.MinBet;
+                numericUpDownBet.Value = b.MinBet;
                 if (numericUpDownPayout.Value < b.MinRatio)
                     numericUpDownPayout.Value = b.MinRatio;
                 labelMinMaxBet.Text = "(" + b.MinBet + " - ???)";
@@ -337,6 +339,39 @@ namespace CryptoGame
             else
                 AddOutputLine("Coin or API Key invalid.");
         }
+        #endregion
+
+        #region UTILITY
+        private void AddHistoricRow(BetResult b)
+        {
+            DataRow row = _dtHistoricBet.NewRow();
+            row["Coin"] = b.Coin;
+            row["Profit"] = b.Profit;
+            _dtHistoricBet.Rows.Add(row);
+        }
+
+        /// <summary>
+        /// Ajoute une ligne dans la textBoxOutput (thread-safe)
+        /// </summary>
+        private void AddOutputLine(string text)
+        {
+            if (textBoxOutput.InvokeRequired)
+                this.Invoke((MethodInvoker)(() => AddOutputLine(text)));
+            else
+                textBoxOutput.AppendText(text + "\r\n");
+        }
+
+        private void RefreshGridViewHistoric()
+        {
+            if (dataGridViewHistoric.InvokeRequired)
+                this.Invoke((MethodInvoker)(() => RefreshGridViewHistoric()));
+            else
+            {
+                dataGridViewHistoric.DataSource = null;
+                dataGridViewHistoric.DataSource = _dtHistoricBet;
+            }
+        }
+        #endregion
     }
 
     public class BetSettings
@@ -509,5 +544,23 @@ namespace CryptoGame
             output += "Profit: " + this.Profit;
             return output;
         }
+    }
+
+    public class ErrorMessage
+    {
+        public string Message { get; set; } = "";
+
+        public static ErrorMessage FromJSONDynamic(dynamic json, string coin)
+        {
+            ErrorMessage s = new ErrorMessage();
+            s.Message = json.Message;
+            return s;
+        }
+
+        public override string ToString()
+        {
+            return Message;
+        }
+
     }
 }
