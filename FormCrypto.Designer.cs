@@ -125,6 +125,7 @@
             this.buttonPoloniex.TabIndex = 7;
             this.buttonPoloniex.Text = "POLONIEX";
             this.buttonPoloniex.UseVisualStyleBackColor = true;
+            this.buttonPoloniex.Visible = false;
             this.buttonPoloniex.Click += new System.EventHandler(this.buttonPoloniex_Click);
             // 
             // textBoxOutput

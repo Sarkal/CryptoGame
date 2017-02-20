@@ -151,9 +151,10 @@ namespace CryptoGame
                     AddOutputLine($"EXCEPTION : {e.ToString()}");
                     return null;
                 }
-
             }
         }
+
+        // TODO essayer avec event pour récupérer la réponse
 
         private CoinBalance JsonGetBalance(string coin, string key)
         {
@@ -162,15 +163,21 @@ namespace CryptoGame
                 string url = "https://api.crypto-games.net/v1/balance/" + coin + "/" + key;
 
                 WebRequest req = WebRequest.Create(url);
-
-                using (WebResponse res = req.GetResponse())
-                using (var reader = new StreamReader(res.GetResponseStream()))
+                try
                 {
-                    string responseJSON = reader.ReadToEnd();
-                    dynamic json = System.Web.Helpers.Json.Decode(responseJSON);
+                    using (WebResponse res = req.GetResponse())
+                    using (var reader = new StreamReader(res.GetResponseStream()))
+                    {
+                        string responseJSON = reader.ReadToEnd();
+                        dynamic json = System.Web.Helpers.Json.Decode(responseJSON);
 
-                    CoinBalance bal = CoinBalance.FromJSONDynamic(json, coin);
-                    return bal;
+                        CoinBalance bal = CoinBalance.FromJSONDynamic(json, coin);
+                        return bal;
+                    }
+                }
+                catch (Exception e)
+                {
+                    AddOutputLine($"EXCEPTION. Message: {e.ToString()}");
                 }
             }
             else
@@ -412,16 +419,17 @@ namespace CryptoGame
         public string Coin { get; set; }
         public int Bets { get; set; }
         public decimal Wagered { get; set; }
-        public decimal Profit { get; set; }
+        public decimal PlayersProfit { get; set; }
+        public decimal InvestorsProfit { get; set; }
         public decimal Bankroll { get; set; }
-
         public static CoinStats FromJSONDynamic(dynamic json)
         {
             CoinStats cs = new CoinStats();
             cs.Coin = json.Coin;
             cs.Bets = json.Bets;
             cs.Wagered = json.Wagered;
-            cs.Profit = json.Profit;
+            cs.PlayersProfit = json.PlayersProfit;
+            cs.InvestorsProfit = json.InvestorsProfit;
             cs.Bankroll = json.Bankroll;
             return cs;
         }
@@ -431,7 +439,8 @@ namespace CryptoGame
             string output = "Coin: " + this.Coin + "\r\n";
             output += "Bets: " + this.Bets + "\r\n";
             output += "Amount Wagered: " + this.Wagered + "\r\n";
-            output += "Total Profit: " + this.Profit + "\r\n";
+            output += "Players Profit: " + this.PlayersProfit + "\r\n";
+            output += "Investors Profit: " + this.InvestorsProfit + "\r\n";
             output += "Bankroll: " + this.Bankroll;
             return output;
         }
